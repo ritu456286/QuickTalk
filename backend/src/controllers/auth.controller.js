@@ -2,7 +2,7 @@ import cloudinary from "../lib/cloudinary.js";
 import { generateToken, sendEmail } from "../lib/utils.js";
 import { User, validate } from "../models/user.model.js";
 import bcrypt from "bcryptjs";
-import fs from "fs";
+
 import Token from "../models/token.js";
 import { forgotMessage } from "../lib/forgotMessage.js";
 import crypto from "crypto";
@@ -17,37 +17,26 @@ export const signup = async (req, res) => {
     });
   }
   try {
-    // if(!fullName || !password || !email){
-    //     return res.status(400).json({message: "All fields are required"})
-    // }
-
-    // if(password.length < 6){
-    //     return res.status(400).json({ message: "Password must be at least 6 characters."})
-    // }
 
     const user = await User.findOne({ email });
-    // console.log("user found query completed")
+   
     if (user) return res.status(400).json({ message: "Email already exits" });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    // console.log("password is hashed")
-    //create a new user
+  
     const newUser = new User({
       fullName,
       email,
       password: hashedPassword,
     });
-    // console.log("new user defined")
-    //if user is successfully created
+   
     if (newUser) {
-      //generate jwt token here
-      // console.log("Going to generate token")
+     
       generateToken(newUser._id, res);
-      // console.log("token generated")
-      //save the new user
+      
       await newUser.save();
-      // console.log("newuser saved")
+     
       res.status(201).json({
         _id: newUser._id,
         fullName: newUser.fullName,
@@ -128,14 +117,9 @@ export const updateProfile = async (req, res) => {
 
       const uploadResponse = await streamUpload(req.file.buffer);
 
-    // const uploadResponse = await cloudinary.uploader.upload(req.file.path, {
-    //   resource_type: "auto",
-    // });
-
     // Delete the temporary file after uploading to Cloudinary
     const userId = req.user._id;
-
-    // fs.unlinkSync(req.file.path);
+    
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },

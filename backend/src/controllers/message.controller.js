@@ -1,9 +1,11 @@
 import {User} from "../models/user.model.js";
 import Message from "../models/message.model.js"
 import cloudinary from "../lib/cloudinary.js";
-import fs from "fs"
+
 import { getSocketId } from "../lib/socket.js";
 import {io} from "../lib/socket.js"
+import streamifier from 'streamifier';
+
 //GET: All users excepts the current loggedIn user
 export const getUsersForSidebar = async(req, res) => {
     try {
@@ -41,7 +43,7 @@ export const getMessages = async(req, res) => {
 export const sendMessage = async(req, res) => {
     try {
         //first parse the multipart data using multer
-        // console.log(req.text);
+   
         const { text } = req.body;
         const image = req.file;
         
@@ -50,15 +52,26 @@ export const sendMessage = async(req, res) => {
 
         let imageUrl;
         if(image){
-            //Upload base64 image to cloudinary
-            
-            const uploadResponse = await cloudinary.uploader.upload(image.path,{
-                resource_type: 'auto'
-            });
+           
+            const streamUpload = (buffer) =>
+                new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    { resource_type: 'auto' },
+                    (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                    }
+                );
+                streamifier.createReadStream(buffer).pipe(stream);
+                });
+
+            const uploadResponse = await streamUpload(image.buffer);
+
             imageUrl = uploadResponse.secure_url;
 
-           
-            fs.unlinkSync(req.file.path);
         }
 
         const newMessage = new Message({

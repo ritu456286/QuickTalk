@@ -84,7 +84,14 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     //delete the jwt token from cookie
-    res.cookie("jwt", "", { maxAge: 0 });
+    // res.cookie("jwt", "", { maxAge: 0 });
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === "production" ? "None": "Strict", // Cross-origin logout
+      secure: process.env.NODE_ENV === "production", // Ensure HTTPS in production
+      path: "/"
+  });
+
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log("Error in logout controller", error.message);

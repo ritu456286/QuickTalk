@@ -214,7 +214,7 @@ export const resetPassword = async (req, res) => {
   const { password: newPassword } = req.body;
 
   try {
-    if (!resetToken || !newPassword) {
+    if (!resetToken || !newPassword || !userId) {
       return res.status(400).json({ message: "Invalid Request" });
     }
 

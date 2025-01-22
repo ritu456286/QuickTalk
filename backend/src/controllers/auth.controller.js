@@ -6,6 +6,7 @@ import fs from "fs";
 import Token from "../models/token.js";
 import { forgotMessage } from "../lib/forgotMessage.js";
 import crypto from "crypto";
+import streamifier from 'streamifier';
 
 export const signup = async (req, res) => {
   const { fullName, password, email } = req.body;
@@ -108,14 +109,33 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(req.file.path, {
-      resource_type: "auto",
-    });
+
+    // Upload to Cloudinary using a buffer
+    const streamUpload = (buffer) =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { resource_type: "auto" },
+          (error, result) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(error);
+            }
+          }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+      });
+
+      const uploadResponse = await streamUpload(req.file.buffer);
+
+    // const uploadResponse = await cloudinary.uploader.upload(req.file.path, {
+    //   resource_type: "auto",
+    // });
 
     // Delete the temporary file after uploading to Cloudinary
     const userId = req.user._id;
 
-    fs.unlinkSync(req.file.path);
+    // fs.unlinkSync(req.file.path);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },
